@@ -3,9 +3,7 @@
 
 // set up the endpoint and data file names.
 // for an end point of "/api/blog/" using the datafile blog.json
-// $namespace = array('blog' => 'blog');
 
-$namespace = array('blog' => 'blog');
 
 
 $test_array = array(1 => array("title" => "The Array and how to care for it",
@@ -20,7 +18,21 @@ function rest_put(){
 
 }
 
-function rest_post(){
+function rest_post($request){
+
+
+  $datafile=$request[0] . '.json';
+  $dataarray=file_read($datafile);
+  if(isset($request[1])&&is_numeric($request[1])){
+  //  $dataarray = array();
+    if(isset($dataarray[$request[1]])){
+      //get both the key and the values
+      $dataarray=array_slice($dataarray, $request[1]-1, 1, true);
+    }else{
+      $dataarray=array();
+    }
+  }
+  output_json($dataarray);
 
 }
 
@@ -87,8 +99,11 @@ function output_json($dataarray){
 
 function operation(){
   $method = $_SERVER['REQUEST_METHOD'];
+  $request = '';
+  if(isset($_GET['qs'])){
+    $request = explode('/',$_GET['qs']);
+  }
 
-  $request = explode('/',$_GET['qs']);
 
   switch ($method) {
     case 'PUT':
