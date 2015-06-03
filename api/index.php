@@ -4,34 +4,54 @@
 // set up the endpoint and data file names.
 // for an end point of "/api/blog/" using the datafile blog.json
 
+//run the main function
+operation();
 
-
-$test_array = array(1 => array("title" => "The Array and how to care for it",
-   "body" => "A long and boring story goes here."),2 => array("title" => "The love of an array for a kingdom",
-      "body" => "Another long and boring story goes here."));
-
-
-  operation();
-
-
+// all of the REST functions
 function rest_put(){
 
 }
 
 function rest_post($request){
 
-
   $datafile=$request[0] . '.json';
-  $dataarray=file_read($datafile);
-  if(isset($request[1])&&is_numeric($request[1])){
-  //  $dataarray = array();
-    if(isset($dataarray[$request[1]])){
-      //get both the key and the values
-      $dataarray=array_slice($dataarray, $request[1]-1, 1, true);
+  $dataarrayfile=file_read($datafile);
+
+
+
+
+  if(isset($request[1])){
+
+    // if it is not a number
+    if(!is_numeric($request[1])){
+      // update error message if desired
+      $dataarray=array('id invalid');
+    // if it can be found in array
     }else{
-      $dataarray=array();
+
+
+
+      //get both the key and the values
+      //$dataarray=array($request[1] => $dataarrayfile[$request[1]]);
+
+      foreach($dataarrayfile as $i) {
+        if($i['id'] == $request[1]){
+          $dataarray= $i;
+        }
+      }
     }
+    // if it was not found
+    if(empty($dataarray)){
+      // update error message if desired
+      $dataarray=array('id not found');
+    }
+
+  }else{
+    //if no id was sent send everything
+    $dataarray = $dataarrayfile;
   }
+
+  // send data arrau to output function
   output_json($dataarray);
 
 }
@@ -64,8 +84,14 @@ function action($namespace){
 
 // Basic file i/o read
 function file_read($datafile){
-  // get the Json file
-  $json = file_get_contents($datafile);
+  // get the Json file use @ to suppress can not open stream error
+  $json = @file_get_contents($datafile);
+
+  if($json === FALSE) {
+
+    $json = "[{bad file name}]";
+  }
+
   // turn json into php array
   $array = json_decode($json, true);
 
