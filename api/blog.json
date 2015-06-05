@@ -1,10 +1,1 @@
-[
-{"id": 1,
-    "title": "The Array and how to care for it",
-    "body": "A long and boring story goes here."
-  },
-  {"id": 2,
-      "title": "The love of a array for a kingdom",
-      "body": "Another long and boring story goes here."
-    }
-  ]
+[{"id":1,"title":"The Array and how to care for it","body":"A long and boring story goes here."},{"id":3,"title":"How to love json","body":"more text about json"},{"id":4,"title":"The big big API","body":"Make sure you rest"},{"id":5,"title":"The big big API","body":"Make sure you rest"},{"id":6,"title":"The ID skip","body":"Does this get a good id"}]

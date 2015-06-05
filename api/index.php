@@ -1,18 +1,90 @@
 <?php
 //Config Settings
 
-// set up the endpoint and data file names.
-// for an end point of "/api/blog/" using the datafile blog.json
+// set up the endpoint and data file and schema.
 
+function config($database = null){
+
+  $config =array (
+  'blog' =>
+    array (
+      'datafile' => 'blog',
+      'schema' =>
+      array (
+        'id' => 'int',
+        'title' => 'string',
+        'body' => 'long string',
+      ),
+    ),
+    'user' =>
+    array (
+      'datafile' => 'login',
+      'schema' =>
+      array (
+        'id' => 'int',
+        'first_name' => 'string',
+        'last_name' => 'string',
+      ),
+    ),
+  );
+
+  if(isset($database)){
+    $config = $config[$database];
+
+  }
+
+  return $config;
+}
 //run the main function
 operation();
 
 // all of the REST functions
-function rest_put(){
+function rest_put($request){
+
+
 
 }
 
-function rest_post($request){
+function rest_post($request,$post){
+  //get config
+  $configdata = config($request[0]);
+  //get data
+  $datafile=$request[0] . '.json';
+  $dataarray=file_read($datafile);
+
+  //get next id
+  $idarray = array();
+
+  foreach($dataarray as $k=>$v) {
+
+    $idarray[]= $v['id'];
+  }
+
+  asort($idarray);
+
+
+  $nextid = array_pop($idarray);
+  $nextid = $nextid+1;
+
+  //get the dataschema
+  $dataschema = $configdata['schema'];
+
+  $newrow = array();
+
+  foreach($dataschema as $k=>$v) {
+    if($k == 'id'){
+      $newrow[$k] =   $nextid;
+    }else{
+      $newrow[$k] = $post[$k];
+    }
+  }
+
+  $dataarray[]=$newrow;
+  //var_dump($dataarray);
+  file_write($datafile, $dataarray);
+}
+
+function rest_get($request){
 
   $datafile=$request[0] . '.json';
   $dataarrayfile=file_read($datafile);
@@ -82,7 +154,7 @@ function action($namespace){
 
 }
 
-// Basic file i/o read
+// Basic file i/o read and php array return
 function file_read($datafile){
   // get the Json file use @ to suppress can not open stream error
   $json = @file_get_contents($datafile);
@@ -125,6 +197,7 @@ function output_json($dataarray){
 
 function operation(){
   $method = $_SERVER['REQUEST_METHOD'];
+
   $request = '';
   if(isset($_GET['qs'])){
     $request = explode('/',$_GET['qs']);
@@ -136,10 +209,11 @@ function operation(){
       rest_put($request);
       break;
     case 'POST':
-      rest_post($request);
+      $post = $_POST;
+      rest_post($request,$post);
       break;
     case 'GET':
-      rest_post($request);
+      rest_get($request);
       break;
     case 'HEAD':
       rest_head($request);
