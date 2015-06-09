@@ -39,9 +39,51 @@ function config($database = null){
 operation();
 
 // all of the REST functions
-function rest_put($request){
+function rest_put($request,$put){
+
+  //get config
+  $configdata = config($request[0]);
+  //get data
+  $datafile=$request[0] . '.json';
+  $dataarray=file_read($datafile);
 
 
+  if(!isset($put['id']) && isset($request[1])){
+    $put['id']=$request[1];
+  }
+
+  if(!isset($put['id'])){
+    rest_error('Invalid ID');
+  }
+
+  // look for the id in the data
+  foreach($dataarray as $k=>$v) {
+
+    if($v['id'] == $put['id']){
+
+      // add id to request
+      $request[] = $put['id'];
+
+       rest_delete($request);
+      $dataarray=file_read($datafile);
+    }
+  }
+
+
+
+  //get the dataschema
+  $dataschema = $configdata['schema'];
+
+  $newrow = array();
+
+  foreach($dataschema as $k=>$v) {
+
+      $newrow[$k] = $put[$k];
+  }
+
+  $dataarray[]=$newrow;
+
+  file_write($datafile, $dataarray);
 
 }
 
@@ -51,6 +93,7 @@ function rest_post($request,$post){
   //get data
   $datafile=$request[0] . '.json';
   $dataarray=file_read($datafile);
+
 
   //get next id
   $idarray = array();
@@ -66,6 +109,8 @@ function rest_post($request,$post){
   $nextid = array_pop($idarray);
   $nextid = $nextid+1;
 
+  // -- next id end
+
   //get the dataschema
   $dataschema = $configdata['schema'];
 
@@ -80,16 +125,18 @@ function rest_post($request,$post){
   }
 
   $dataarray[]=$newrow;
-  //var_dump($dataarray);
+
   file_write($datafile, $dataarray);
 }
 
 function rest_get($request){
 
+  //if no endpoint is requeted, list endpoints
+  if(!isset($request[0])){
+    list_endpoints();
+  }
   $datafile=$request[0] . '.json';
   $dataarrayfile=file_read($datafile);
-
-
 
 
   if(isset($request[1])){
@@ -100,8 +147,6 @@ function rest_get($request){
       $dataarray=array('id invalid');
     // if it can be found in array
     }else{
-
-
 
       //get both the key and the values
       //$dataarray=array($request[1] => $dataarrayfile[$request[1]]);
@@ -123,25 +168,49 @@ function rest_get($request){
     $dataarray = $dataarrayfile;
   }
 
-  // send data arrau to output function
+  // send data array to output function
   output_json($dataarray);
 
 }
 
-function rest_head(){
+
+
+function rest_delete($request){
+
+  //get config
+  $configdata = config($request[0]);
+  //get data
+  $datafile=$request[0] . '.json';
+  $dataarray=file_read($datafile);
+
+  foreach($dataarray as $k=>$v) {
+
+    if($v['id'] == $request[1]){
+    unset($dataarray[$k]);
+
+    }
+  }
+
+  // send data array to output function
+  file_write($datafile, $dataarray);
+
+
 
 }
 
-function rest_delete(){
 
-}
 
-function rest_options(){
+function rest_error($errormsg=''){
 
-}
+  if(empty($errormsg)){
+    $errormsg = array('error');
+  }else{
+    $errormsg=array($errormsg);
+  }
 
-function rest_error(){
 
+  output_json($errormsg);
+  exit;
 }
 
 function action($namespace){
@@ -176,7 +245,7 @@ function file_write($datafile, $dataarray){
   // open file for writing
   $file = fopen($datafile, 'w') or die("Error opening output file");
   // write file...  if support for non-ASCII is needed, use php 5.4+ json_encode($array,JSON_UNESCAPED_UNICODE)
-  fwrite($file, json_encode($dataarray));
+  fwrite($file, json_encode(array_values($dataarray)));
   // close the file
   fclose($file);
 
@@ -206,7 +275,12 @@ function operation(){
 
   switch ($method) {
     case 'PUT':
-      rest_put($request);
+
+    $put = array();
+parse_str(file_get_contents('php://input'), $put);
+
+
+  rest_put($request,$put);
       break;
     case 'POST':
       $post = $_POST;
@@ -215,19 +289,27 @@ function operation(){
     case 'GET':
       rest_get($request);
       break;
-    case 'HEAD':
-      rest_head($request);
-      break;
     case 'DELETE':
       rest_delete($request);
-      break;
-    case 'OPTIONS':
-      rest_options($request);
       break;
     default:
       rest_error($request);
       break;
   }
 }
+
+function list_endpoints(){
+  $configdata = config();
+  $output = array();
+  foreach($configdata as $k=>$v) {
+    $output[] = 'api/' . $k;
+  }
+
+  $errormsg = $output;
+
+  rest_error($errormsg);
+
+}
+
 
 ?>
